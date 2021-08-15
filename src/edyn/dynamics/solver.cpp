@@ -46,13 +46,13 @@ void update_impulse(entt::registry &registry, row_cache &cache, size_t &con_idx,
     auto imp_view = registry.view<constraint_impulse>();
 
     for (auto entity : con_view) {
-        auto &imp = imp_view.get(entity);
-        auto num_rows = cache.con_num_rows[con_idx];
-        for (size_t i = 0; i < num_rows; ++i) {
-            imp.values[i] = cache.rows[row_idx + i].impulse;
-        }
+      auto &imp = std::get<0>(imp_view.get(entity));
+      auto num_rows = cache.con_num_rows[con_idx];
+      for (size_t i = 0; i < num_rows; ++i) {
+        imp.values[i] = cache.rows[row_idx + i].impulse;
+      }
 
-        row_idx += num_rows;
+      row_idx += num_rows;
         ++con_idx;
     }
 }
@@ -67,16 +67,16 @@ void update_impulse<contact_constraint>(entt::registry &registry, row_cache &cac
     auto local_idx = size_t{0};
 
     for (auto entity : con_view) {
-        auto &imp = imp_view.get(entity);
-        imp.values[0] = cache.rows[row_idx].impulse;
+      auto &imp = std::get<0>(imp_view.get(entity));
+      imp.values[0] = cache.rows[row_idx].impulse;
 
-        auto &friction_rows = ctx.friction_rows[local_idx];
+      auto &friction_rows = ctx.friction_rows[local_idx];
 
-        for (auto i = 0; i < 2; ++i) {
-            imp.values[1 + i] = friction_rows.row[i].impulse;
-        }
+      for (auto i = 0; i < 2; ++i) {
+        imp.values[1 + i] = friction_rows.row[i].impulse;
+      }
 
-        ++row_idx;
+      ++row_idx;
         ++con_idx;
         ++local_idx;
     }

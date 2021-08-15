@@ -115,8 +115,8 @@ public:
      */
     template<typename Component>
     void created(entt::entity entity, entt::registry &registry) {
-        if constexpr(entt::is_eto_eligible_v<Component>) {
-            created(entity, Component{});
+      if constexpr(std::is_empty_v<Component>) {
+        created(entity, Component{});
         } else {
             created(entity, registry.get<Component>(entity));
         }
@@ -350,8 +350,8 @@ class island_delta_builder_impl: public island_delta_builder {
     template<typename Comp>
     void _created_external(entt::entity entity, entt::registry &registry) {
         if constexpr(!has_type<Comp, shared_components_t>::value) {
-            if (registry.has<Comp>(entity)) {
-                island_delta_builder::created<Comp>(entity, registry);
+          if (registry.all_of<Comp>(entity)) {
+            island_delta_builder::created<Comp>(entity, registry);
             }
         }
     }
@@ -359,8 +359,8 @@ class island_delta_builder_impl: public island_delta_builder {
     template<typename Comp>
     void _updated_external(entt::entity entity, entt::registry &registry) {
         if constexpr(!has_type<Comp, shared_components_t>::value) {
-            if (registry.has<Comp>(entity)) {
-                island_delta_builder::updated<Comp>(entity, registry);
+          if (registry.all_of<Comp>(entity)) {
+            island_delta_builder::updated<Comp>(entity, registry);
             }
         }
     }
@@ -370,12 +370,12 @@ public:
     }
 
     void created(entt::entity entity, entt::registry &registry, entt::id_type id) override {
-        ((entt::type_index<Component>::value() == id ?
+      ((entt::type_seq<Component>::value() == id ?
             island_delta_builder::created<Component>(entity, registry) : (void)0), ...);
     }
 
     void created_all(entt::entity entity, entt::registry &registry) override {
-        ((registry.has<Component>(entity) ?
+        ((registry.all_of<Component>(entity) ?
             island_delta_builder::created<Component>(entity, registry) : (void)0), ...);
     }
 
@@ -384,13 +384,13 @@ public:
     }
 
     void updated(entt::entity entity, entt::registry &registry, entt::id_type id) override {
-        ((entt::type_index<Component>::value() == id ?
+        ((entt::type_seq<Component>::value() == id ?
             island_delta_builder::updated<Component>(entity, registry) : (void)0), ...);
     }
 
     void updated_all(entt::entity entity, entt::registry &registry) override {
-        ((registry.has<Component>(entity) ?
-            island_delta_builder::updated<Component>(entity, registry) : (void)0), ...);
+      ((registry.all_of<Component>(entity) ?
+        island_delta_builder::updated<Component>(entity, registry) : (void)0), ...);
     }
 
     void updated_external(entt::entity entity, entt::registry &registry) override {
@@ -398,8 +398,8 @@ public:
     }
 
     void destroyed(entt::entity entity, entt::id_type id) override {
-        ((entt::type_index<Component>::value() == id ?
-            island_delta_builder::destroyed<Component>(entity) : (void)0), ...);
+      ((entt::type_seq<Component>::value() == id ?
+        island_delta_builder::destroyed<Component>(entity) : (void)0), ...);
     }
 };
 

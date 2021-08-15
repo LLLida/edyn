@@ -36,13 +36,13 @@ void prepare_constraints<hinge_constraint>(entt::registry &registry, row_cache &
         auto originB = static_cast<vector3>(posB);
 
         if (com_view.contains(con.body[0])) {
-            auto &com = com_view.get(con.body[0]);
-            originA = to_world_space(-com, posA, ornA);
+          auto &com = std::get<0>(com_view.get(con.body[0]));
+          originA = to_world_space(-com, posA, ornA);
         }
 
         if (com_view.contains(con.body[1])) {
-            auto &com = com_view.get(con.body[1]);
-            originB = to_world_space(-com, posB, ornB);
+          auto &com = std::get<0>(com_view.get(con.body[1]));
+          originB = to_world_space(-com, posB, ornB);
         }
 
         auto pivotA = to_world_space(con.pivot[0], originA, ornA);

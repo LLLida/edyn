@@ -27,25 +27,25 @@ raycast_result raycast(entt::registry &registry, vector3 p0, vector3 p1) {
     shape_raycast_result result;
 
     auto raycast_shape = [&] (entt::entity entity) {
-        auto sh_idx = index_view.get(entity);
-        auto pos = tr_view.get<position>(entity);
-        auto orn = tr_view.get<orientation>(entity);
+      auto sh_idx = std::get<0>(index_view.get(entity));
+      auto pos = tr_view.get<position>(entity);
+      auto orn = tr_view.get<orientation>(entity);
 
-        if (com_view.contains(entity)) {
-            // Calculate origin using object space center of mass.
-            auto &com = com_view.get(entity);
-            pos = to_world_space(-com, pos, orn);
-        }
+      if (com_view.contains(entity)) {
+        // Calculate origin using object space center of mass.
+        auto &com = std::get<0>(com_view.get(entity));
+        pos = to_world_space(-com, pos, orn);
+      }
 
-        auto ctx = raycast_context{pos, orn, p0, p1};
+      auto ctx = raycast_context{pos, orn, p0, p1};
 
         visit_shape(sh_idx, entity, shape_views_tuple, [&] (auto &&shape) {
-            auto res = raycast(shape, ctx);
+          auto res = raycast(std::get<0>(shape), ctx);
 
-            if (res.fraction < result.fraction) {
-                result = res;
-                hit_entity = entity;
-            }
+          if (res.fraction < result.fraction) {
+            result = res;
+            hit_entity = entity;
+          }
         });
     };
 
@@ -54,8 +54,8 @@ raycast_result raycast(entt::registry &registry, vector3 p0, vector3 p1) {
     if (registry.try_ctx<broadphase_main>() != nullptr) {
         auto &bphase = registry.ctx<broadphase_main>();
         bphase.raycast_islands(p0, p1, [&] (entt::entity island_entity) {
-            auto &tree_view = tree_view_view.get(island_entity);
-            tree_view.raycast(p0, p1, [&] (tree_node_id_t id) {
+          auto &tree_view = std::get<0>(tree_view_view.get(island_entity));
+          tree_view.raycast(p0, p1, [&] (tree_node_id_t id) {
                 auto entity = tree_view.get_node(id).entity;
                 raycast_shape(entity);
             });

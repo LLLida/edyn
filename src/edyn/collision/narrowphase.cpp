@@ -41,7 +41,7 @@ void narrowphase::update_async(job &completion_job) {
     parallel_for_async(dispatcher, size_t{0}, manifold_view.size(), size_t{1}, completion_job,
             [this, body_view, tr_view, com_view, manifold_view, cp_view, imp_view, shapes_views_tuple] (size_t index) {
         auto entity = manifold_view[index];
-        auto &manifold = manifold_view.get(entity);
+        auto &manifold = std::get<0>(manifold_view.get(entity));
         collision_result result;
         auto &construction_info = m_cp_construction_infos[index];
         auto &destruction_info = m_cp_destruction_infos[index];
@@ -73,7 +73,7 @@ void narrowphase::finish_async_update() {
     // Create contact points.
     for (size_t i = 0; i < manifold_view.size(); ++i) {
         auto entity = manifold_view[i];
-        auto &manifold = manifold_view.get(entity);
+        auto &manifold = std::get<0>(manifold_view.get(entity));
         auto &info_result = m_cp_construction_infos[i];
 
         for (size_t j = 0; j < info_result.count; ++j) {
@@ -88,9 +88,9 @@ void narrowphase::finish_async_update() {
 
 void narrowphase::add_new_contact_point(entt::entity contact_entity,
                                       std::array<entt::entity, 2> body) {
-    if (m_registry->has<material>(body[0]) &&
-        m_registry->has<material>(body[1])) {
-        m_new_contact_points.push_back(contact_entity);
+  if (m_registry->all_of<material>(body[0]) &&
+      m_registry->all_of<material>(body[1])) {
+    m_new_contact_points.push_back(contact_entity);
     }
 }
 
@@ -103,7 +103,7 @@ void narrowphase::create_contact_constraints() {
             continue; // Might've been destroyed.
         }
 
-        auto &cp = cp_view.get(contact_entity);
+        auto &cp = std::get<0>(cp_view.get(contact_entity));
 
         if (mat_view.contains(cp.body[0]) && mat_view.contains(cp.body[1])) {
             create_contact_constraint(*m_registry, contact_entity, cp);

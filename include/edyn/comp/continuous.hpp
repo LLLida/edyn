@@ -18,8 +18,8 @@ struct continuous {
 
     template<typename... Component>
     void insert() {
-        ((types[size++] = entt::type_index<Component>::value()), ...);
-        EDYN_ASSERT(size <= max_size);
+      ((types[size++] = entt::type_seq<Component>::value()), ...);
+      EDYN_ASSERT(size <= max_size);
     }
 };
 

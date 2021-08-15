@@ -32,8 +32,8 @@ void update_aabb(entt::entity entity, ShapeType &shape, TransformView &tr_view, 
     auto origin = static_cast<vector3>(pos);
 
     if (com_view.contains(entity)) {
-        auto &com = com_view.get(entity);
-        origin = to_world_space(-com, pos, orn);
+      auto &com = std::get<0>(com_view.get(entity));
+      origin = to_world_space(-com, pos, orn);
     }
 
     aabb = updated_aabb(shape, origin, orn);

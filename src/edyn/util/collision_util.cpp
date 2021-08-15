@@ -22,13 +22,13 @@ void update_contact_distances(entt::registry &registry) {
         auto originB = static_cast<vector3>(posB);
 
         if (com_view.contains(cp.body[0])) {
-            auto &com = com_view.get(cp.body[0]);
-            originA = to_world_space(-com, posA, ornA);
+          auto &com = std::get<0>(com_view.get(cp.body[0]));
+          originA = to_world_space(-com, posA, ornA);
         }
 
         if (com_view.contains(cp.body[1])) {
-            auto &com = com_view.get(cp.body[1]);
-            originB = to_world_space(-com, posB, ornB);
+          auto &com = std::get<0>(com_view.get(cp.body[1]));
+          originB = to_world_space(-com, posB, ornB);
         }
 
         auto pivotA_world = to_world_space(cp.pivotA, originA, ornA);
@@ -129,8 +129,8 @@ entt::entity create_contact_point(entt::registry& registry,
     auto &contact_dirty = registry.get_or_emplace<dirty>(contact_entity);
     contact_dirty.set_new().created<contact_point>();
 
-    if (registry.has<continuous_contacts_tag>(manifold.body[0]) ||
-        registry.has<continuous_contacts_tag>(manifold.body[1])) {
+    if (registry.all_of<continuous_contacts_tag>(manifold.body[0]) ||
+        registry.all_of<continuous_contacts_tag>(manifold.body[1])) {
 
         registry.emplace<edyn::continuous>(contact_entity).insert<edyn::contact_point>();
         contact_dirty.created<continuous>();
@@ -190,13 +190,13 @@ void detect_collision(std::array<entt::entity, 2> body, collision_result &result
         auto originB = static_cast<vector3>(posB);
 
         if (com_view.contains(body[0])) {
-            auto &com = com_view.get(body[0]);
-            originA = to_world_space(-com, posA, ornA);
+          auto &com = std::get<0>(com_view.get(body[0]));
+          originA = to_world_space(-com, posA, ornA);
         }
 
         if (com_view.contains(body[1])) {
-            auto &com = com_view.get(body[1]);
-            originB = to_world_space(-com, posB, ornB);
+          auto &com = std::get<0>(com_view.get(body[1]));
+          originB = to_world_space(-com, posB, ornB);
         }
 
         auto shape_indexA = body_view.get<shape_index>(body[0]);
@@ -205,7 +205,7 @@ void detect_collision(std::array<entt::entity, 2> body, collision_result &result
 
         visit_shape(shape_indexA, body[0], views_tuple, [&] (auto &&shA) {
             visit_shape(shape_indexB, body[1], views_tuple, [&] (auto &&shB) {
-                collide(shA, shB, ctx, result);
+              collide(std::get<0>(shA), std::get<0>(shB), ctx, result);
             });
         });
     } else {

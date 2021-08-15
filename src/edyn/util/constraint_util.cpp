@@ -18,12 +18,12 @@ namespace internal {
         // Multiple constraints of different types can be assigned to the same
         // entity. If this entity already has a graph edge, just do a few
         // consistency checks.
-        if (registry.has<graph_edge>(entity)) {
-            auto &edge = registry.get<graph_edge>(entity);
+      if (registry.all_of<graph_edge>(entity)) {
+        auto &edge = registry.get<graph_edge>(entity);
             auto [ent0, ent1] = registry.ctx<entity_graph>().edge_node_entities(edge.edge_index);
             EDYN_ASSERT(ent0 == body0 && ent1 == body1);
-            EDYN_ASSERT(registry.has<constraint_impulse>(entity));
-            EDYN_ASSERT(registry.has<procedural_tag>(entity));
+            EDYN_ASSERT(registry.all_of<constraint_impulse>(entity));
+            EDYN_ASSERT(registry.all_of<procedural_tag>(entity));
             return false;
         }
 

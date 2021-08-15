@@ -101,13 +101,13 @@ void process_collision(entt::entity manifold_entity, contact_manifold &manifold,
     auto originB = static_cast<vector3>(posB);
 
     if (com_view.contains(manifold.body[0])) {
-        auto &com = com_view.get(manifold.body[0]);
-        originA = to_world_space(-com, posA, ornA);
+      auto &com = std::get<0>(com_view.get(manifold.body[0]));
+      originA = to_world_space(-com, posA, ornA);
     }
 
     if (com_view.contains(manifold.body[1])) {
-        auto &com = com_view.get(manifold.body[1]);
-        originB = to_world_space(-com, posB, ornB);
+      auto &com = std::get<0>(com_view.get(manifold.body[1]));
+      originB = to_world_space(-com, posB, ornB);
     }
 
     // Merge new with existing contact points.
@@ -222,7 +222,7 @@ void process_collision(entt::entity manifold_entity, contact_manifold &manifold,
             if (local_pt.entity == entt::null) {
                 new_point_func(local_pt.point);
             } else {
-                merge_point(local_pt.point, cp_view.get(local_pt.entity));
+              merge_point(local_pt.point, std::get<0>(cp_view.get(local_pt.entity)));
             }
             break;
         case point_insertion_type::replace:

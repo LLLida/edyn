@@ -47,7 +47,8 @@ void broadphase_worker::init_new_aabb_entities() {
         // Entity might've been destroyed, thus skip it.
         if (!m_registry->valid(entity)) continue;
 
-        auto &aabb = aabb_view.get(entity);
+        // auto &aabb = aabb_view.get(entity);CHANGE:
+        auto& aabb = std::get<0>(aabb_view.get(entity));
         bool procedural = procedural_view.contains(entity);
         auto &tree = procedural ? m_tree : m_np_tree;
         tree_node_id_t id = tree.create(aabb, entity);
@@ -58,10 +59,11 @@ void broadphase_worker::init_new_aabb_entities() {
 }
 
 bool broadphase_worker::parallelizable() const {
-    return m_registry->view<AABB, procedural_tag>().size() > 1;
+  // return m_registry->view<AABB, procedural_tag>().size() > 1;CHANGE:
+  return m_registry->view<const AABB, const procedural_tag>().size_hint() > 1;
 }
 
-void destroy_separated_manifolds(entt::registry &registry) {
+  void destroy_separated_manifolds(entt::registry &registry) {
     auto aabb_view = registry.view<AABB>();
     auto manifold_view = registry.view<contact_manifold>();
 
@@ -87,11 +89,11 @@ void broadphase_worker::collide_tree(const dynamic_tree &tree, entt::entity enti
         auto collides = (*settings.should_collide_func)(*m_registry, entity, node.entity);
 
         if (collides && !m_manifold_map.contains(entity, node.entity)) {
-            auto &other_aabb = aabb_view.get(node.entity);
+          auto &other_aabb = std::get<0>(aabb_view.get(node.entity));
 
-            if (intersect(offset_aabb, other_aabb)) {
-                make_contact_manifold(*m_registry, entity, node.entity, m_separation_threshold);
-            }
+          if (intersect(offset_aabb, other_aabb)) {
+            make_contact_manifold(*m_registry, entity, node.entity, m_separation_threshold);
+          }
         }
     });
 }
@@ -105,11 +107,11 @@ void broadphase_worker::collide_tree_async(const dynamic_tree &tree, entt::entit
         auto &node = tree.get_node(id);
 
         if ((*settings.should_collide_func)(*m_registry, entity, node.entity)) {
-            auto &other_aabb = aabb_view.get(node.entity);
+          auto &other_aabb = std::get<0>(aabb_view.get(node.entity));
 
-            if (intersect(offset_aabb, other_aabb)) {
-                m_pair_results[result_index].emplace_back(entity, node.entity);
-            }
+          if (intersect(offset_aabb, other_aabb)) {
+            m_pair_results[result_index].emplace_back(entity, node.entity);
+          }
         }
     });
 }

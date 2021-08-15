@@ -47,27 +47,29 @@ class island_coordinator final {
 public:
     island_coordinator(entt::registry &);
     ~island_coordinator();
+  island_coordinator(island_coordinator&&) = default; /* entt requires types be movable or copyable, 
+                                                         implicitly defaulted copy constructor will cause an error */
 
     void on_construct_graph_node(entt::registry &, entt::entity);
-    void on_construct_graph_edge(entt::registry &, entt::entity);
+  void on_construct_graph_edge(entt::registry &, entt::entity);
 
-    void on_destroy_graph_node(entt::registry &, entt::entity);
-    void on_destroy_graph_edge(entt::registry &, entt::entity);
+  void on_destroy_graph_node(entt::registry &, entt::entity);
+  void on_destroy_graph_edge(entt::registry &, entt::entity);
 
-    void on_destroy_island_resident(entt::registry &, entt::entity);
-    void on_destroy_multi_island_resident(entt::registry &, entt::entity);
-    void on_island_delta(entt::entity, const island_delta &);
-    void on_split_island(entt::entity, const msg::split_island &);
+  void on_destroy_island_resident(entt::registry &, entt::entity);
+  void on_destroy_multi_island_resident(entt::registry &, entt::entity);
+  void on_island_delta(entt::entity, const island_delta &);
+  void on_split_island(entt::entity, const msg::split_island &);
 
-    void on_destroy_contact_manifold(entt::registry &, entt::entity);
+  void on_destroy_contact_manifold(entt::registry &, entt::entity);
 
-    void update();
+  void update();
 
-    void set_paused(bool);
-    void step_simulation();
+  void set_paused(bool);
+  void step_simulation();
 
-    template<typename... Component>
-    void refresh(entt::entity entity);
+  template<typename... Component>
+  void refresh(entt::entity entity);
 
     void set_fixed_dt(scalar dt);
 
@@ -97,8 +99,8 @@ template<typename... Component>
 void island_coordinator::refresh(entt::entity entity) {
     static_assert(sizeof...(Component) > 0);
 
-    if (m_registry->has<island_resident>(entity)) {
-        auto &resident = m_registry->get<island_resident>(entity);
+    if (m_registry->all_of<island_resident>(entity)) {
+      auto &resident = m_registry->get<island_resident>(entity);
         auto &ctx = m_island_ctx_map.at(resident.island_entity);
         ctx->m_delta_builder->updated<Component...>(entity, *m_registry);
     } else {

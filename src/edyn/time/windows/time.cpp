@@ -2,7 +2,11 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#ifndef __MINGW32__
 #include <timeapi.h>
+#else
+#include <mmsystem.h>
+#endif
 
 namespace edyn {
 

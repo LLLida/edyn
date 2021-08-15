@@ -264,8 +264,8 @@ void island_worker::on_island_delta(const island_delta &delta) {
         if (!m_entity_map.has_rem(remote_entity)) return;
 
         auto local_entity = m_entity_map.remloc(remote_entity);
-        auto &node0 = node_view.get(manifold.body[0]);
-        auto &node1 = node_view.get(manifold.body[1]);
+        auto &node0 = std::get<0>(node_view.get(manifold.body[0]));
+        auto &node1 = std::get<0>(node_view.get(manifold.body[1]));
         auto edge_index = graph.insert_edge(local_entity, node0.node_index, node1.node_index);
         m_registry.emplace<graph_edge>(local_entity, edge_index);
         m_new_imported_contact_manifolds.push_back(local_entity);
@@ -280,8 +280,8 @@ void island_worker::on_island_delta(const island_delta &delta) {
         if (!m_entity_map.has_rem(remote_entity)) return;
 
         auto local_entity = m_entity_map.remloc(remote_entity);
-        auto &node0 = node_view.get(con.body[0]);
-        auto &node1 = node_view.get(con.body[1]);
+        auto &node0 = std::get<0>(node_view.get(con.body[0]));
+        auto &node1 = std::get<0>(node_view.get(con.body[1]));
         auto edge_index = graph.insert_edge(local_entity, node0.node_index, node1.node_index);
         m_registry.emplace<graph_edge>(local_entity, edge_index);
     });
@@ -304,7 +304,7 @@ void island_worker::on_island_delta(const island_delta &delta) {
             return;
         }
 
-        auto &cp = cp_view.get(local_entity);
+        auto &cp = std::get<0>(cp_view.get(local_entity));
 
         if (mat_view.contains(cp.body[0]) && mat_view.contains(cp.body[1])) {
             create_contact_constraint(m_registry, local_entity, cp);
@@ -320,12 +320,12 @@ void island_worker::on_island_delta(const island_delta &delta) {
 
         update_aabb(m_registry, local_entity);
 
-        if (m_registry.has<dynamic_tag>(local_entity)) {
-            update_inertia(m_registry, local_entity);
+        if (m_registry.all_of<dynamic_tag>(local_entity)) {
+          update_inertia(m_registry, local_entity);
         }
 
-        if (m_registry.has<rotated_mesh_list>(local_entity)) {
-            update_rotated_mesh(m_registry, local_entity);
+        if (m_registry.all_of<rotated_mesh_list>(local_entity)) {
+          update_rotated_mesh(m_registry, local_entity);
         }
     });
 
@@ -335,8 +335,8 @@ void island_worker::on_island_delta(const island_delta &delta) {
 
         auto local_entity = m_entity_map.remloc(remote_entity);
 
-        if (m_registry.has<AABB>(local_entity)) {
-            update_aabb(m_registry, local_entity);
+        if (m_registry.all_of<AABB>(local_entity)) {
+          update_aabb(m_registry, local_entity);
         }
     });
 
@@ -345,9 +345,9 @@ void island_worker::on_island_delta(const island_delta &delta) {
 }
 
 void island_worker::on_wake_up_island(const msg::wake_up_island &) {
-    if (!m_registry.has<sleeping_tag>(m_island_entity)) return;
+  if (!m_registry.all_of<sleeping_tag>(m_island_entity)) return;
 
-    auto builder = make_island_delta_builder(m_registry);
+  auto builder = make_island_delta_builder(m_registry);
 
     auto &isle_timestamp = m_registry.get<island_timestamp>(m_island_entity);
     isle_timestamp.value = performance_time();
@@ -491,8 +491,8 @@ bool island_worker::should_step() {
 
     auto &settings = m_registry.ctx<edyn::settings>();
 
-    if (settings.paused || m_registry.has<sleeping_tag>(m_island_entity)) {
-        return false;
+    if (settings.paused || m_registry.all_of<sleeping_tag>(m_island_entity)) {
+      return false;
     }
 
     auto &isle_time = m_registry.get<island_timestamp>(m_island_entity);
@@ -677,7 +677,7 @@ void island_worker::maybe_reschedule() {
     // Reschedule this job only if not paused nor sleeping nor splitting.
     if (m_splitting.load(std::memory_order_relaxed)) return;
 
-    auto sleeping = m_registry.has<sleeping_tag>(m_island_entity);
+    auto sleeping = m_registry.all_of<sleeping_tag>(m_island_entity);
     auto paused = m_registry.ctx<edyn::settings>().paused;
 
     // The update is done and this job can be rescheduled after this point
@@ -754,44 +754,44 @@ void island_worker::init_new_shapes() {
     auto compound_view = m_registry.view<compound_shape>();
 
     for (auto entity : m_new_polyhedron_shapes) {
-        auto &polyhedron = polyhedron_view.get(entity);
-        // A new `rotated_mesh` is assigned to it, replacing another reference
+      auto &polyhedron = std::get<0>(polyhedron_view.get(entity));
+      // A new `rotated_mesh` is assigned to it, replacing another reference
         // that could be already in there, thus preventing concurrent access.
-        auto rotated = make_rotated_mesh(*polyhedron.mesh, orn_view.get(entity));
-        auto rotated_ptr = std::make_unique<rotated_mesh>(std::move(rotated));
+      auto rotated = make_rotated_mesh(*polyhedron.mesh, std::get<0>(orn_view.get(entity)));
+      auto rotated_ptr = std::make_unique<rotated_mesh>(std::move(rotated));
         polyhedron.rotated = rotated_ptr.get();
         m_registry.emplace<rotated_mesh_list>(entity, polyhedron.mesh, std::move(rotated_ptr));
     }
 
     for (auto entity : m_new_compound_shapes) {
-        auto &compound = compound_view.get(entity);
-        auto &orn = orn_view.get(entity);
-        auto prev_rotated_entity = entt::entity{entt::null};
+      auto &compound = std::get<0>(compound_view.get(entity));
+      auto &orn = std::get<0>(orn_view.get(entity));
+      auto prev_rotated_entity = entt::entity{entt::null};
 
-        for (auto &node : compound.nodes) {
-            if (!std::holds_alternative<polyhedron_shape>(node.shape_var)) continue;
+      for (auto &node : compound.nodes) {
+        if (!std::holds_alternative<polyhedron_shape>(node.shape_var)) continue;
 
-            // Assign a `rotated_mesh_list` to this entity for the first
-            // polyhedron and link it with more rotated meshes for the
-            // remaining polyhedrons.
-            auto &polyhedron = std::get<polyhedron_shape>(node.shape_var);
-            auto local_orn = orn * node.orientation;
-            auto rotated = make_rotated_mesh(*polyhedron.mesh, local_orn);
-            auto rotated_ptr = std::make_unique<rotated_mesh>(std::move(rotated));
-            polyhedron.rotated = rotated_ptr.get();
+        // Assign a `rotated_mesh_list` to this entity for the first
+        // polyhedron and link it with more rotated meshes for the
+        // remaining polyhedrons.
+        auto &polyhedron = std::get<polyhedron_shape>(node.shape_var);
+        auto local_orn = orn * node.orientation;
+        auto rotated = make_rotated_mesh(*polyhedron.mesh, local_orn);
+        auto rotated_ptr = std::make_unique<rotated_mesh>(std::move(rotated));
+        polyhedron.rotated = rotated_ptr.get();
 
-            if (prev_rotated_entity == entt::null) {
-                m_registry.emplace<rotated_mesh_list>(entity, polyhedron.mesh, std::move(rotated_ptr), node.orientation);
-                prev_rotated_entity = entity;
-            } else {
-                auto next = m_registry.create();
-                m_registry.emplace<rotated_mesh_list>(next, polyhedron.mesh, std::move(rotated_ptr), node.orientation);
+        if (prev_rotated_entity == entt::null) {
+          m_registry.emplace<rotated_mesh_list>(entity, polyhedron.mesh, std::move(rotated_ptr), node.orientation);
+          prev_rotated_entity = entity;
+        } else {
+          auto next = m_registry.create();
+          m_registry.emplace<rotated_mesh_list>(next, polyhedron.mesh, std::move(rotated_ptr), node.orientation);
 
-                auto &prev_rotated_list = m_registry.get<rotated_mesh_list>(prev_rotated_entity);
-                prev_rotated_list.next = next;
-                prev_rotated_entity = next;
-            }
+          auto &prev_rotated_list = m_registry.get<rotated_mesh_list>(prev_rotated_entity);
+          prev_rotated_list.next = next;
+          prev_rotated_entity = next;
         }
+      }
     }
 
     m_new_polyhedron_shapes.clear();
@@ -802,7 +802,7 @@ void island_worker::insert_remote_node(entt::entity remote_entity) {
     if (!m_entity_map.has_rem(remote_entity)) return;
 
     auto local_entity = m_entity_map.remloc(remote_entity);
-    auto non_connecting = !m_registry.has<procedural_tag>(local_entity);
+    auto non_connecting = !m_registry.all_of<procedural_tag>(local_entity);
 
     auto &graph = m_registry.ctx<entity_graph>();
     auto node_index = graph.insert_node(local_entity, non_connecting);
@@ -878,8 +878,8 @@ void island_worker::on_set_paused(const msg::set_paused &msg) {
 }
 
 void island_worker::on_step_simulation(const msg::step_simulation &) {
-    if (!m_registry.has<sleeping_tag>(m_island_entity)) {
-        m_state = state::begin_step;
+  if (!m_registry.all_of<sleeping_tag>(m_island_entity)) {
+    m_state = state::begin_step;
     }
 }
 
